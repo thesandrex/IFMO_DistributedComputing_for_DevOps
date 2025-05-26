@@ -1,6 +1,6 @@
 services:
   mysql_master:
-    image: mysql:latest
+    image: mysql:8.0
     container_name: mysql_master
     restart: always
     environment:
@@ -10,12 +10,12 @@ services:
       MYSQL_PASSWORD: wp_password
     volumes:
       - master_data:/var/lib/mysql
-      - ./master.conf:/etc/mysql/conf.d/master.conf
+      - ./master.conf:/etc/mysql/my.cnf
     networks:
       - wordpress_network
 
   mysql_replica:
-    image: mysql:latest
+    image: mysql:8.0
     container_name: mysql_replica
     restart: always
     environment:
@@ -27,12 +27,12 @@ services:
       - mysql_master
     volumes:
       - replica_data:/var/lib/mysql
-      - ./replica.conf:/etc/mysql/conf.d/replica.conf
+      - ./replica.conf:/etc/mysql/my.cnf
     networks:
       - wordpress_network
 
   wordpress:
-    image: wordpress:latest
+    image: wordpress:6.8.1
     container_name: wordpress_app
     restart: always
     expose:
@@ -48,7 +48,7 @@ services:
       - wordpress_network
 
   nginx:
-    image: nginx:latest
+    image: nginx:1.28.0
     container_name: nginx
     restart: always
     volumes:
