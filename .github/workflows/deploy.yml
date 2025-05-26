@@ -3,7 +3,7 @@ name: Deploy WordPress
 on:
   push:
     branches:
-      - test
+      - hw3
 
 jobs:
   deploy:
