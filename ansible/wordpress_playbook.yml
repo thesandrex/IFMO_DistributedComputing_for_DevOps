@@ -80,27 +80,17 @@
         state: directory
         mode: '0755'
 
-    - name: Copy Docker Compose file
+    - name: Copy multiple config files
       copy:
-        src: docker-compose.yml
-        dest: "{{ docker_compose_path }}/docker-compose.yml"
-        mode: '0644'
-
-    - name: Copy Nginx Config File
-      copy:
-        src: nginx.conf
-        dest: "{{ docker_compose_path }}/nginx.conf"
-        mode: '0644'
-
-    - name: Copy master.conf
-      copy:
-        src: master.conf
-        dest: "{{ docker_compose_path }}/master.conf"
-
-    - name: Copy replica.conf
-      copy:
-        src: replica.conf
-        dest: "{{ docker_compose_path }}/replica.conf"
+        src: "{{ item.src }}"
+        dest: "{{ docker_compose_path }}/{{ item.dest }}"
+        mode: "0644"
+      loop:
+        - { src: 'docker-compose.yml', dest: 'docker-compose.yml' }
+        - { src: 'nginx.conf', dest: 'nginx.conf' }
+        - { src: 'master.conf', dest: 'master.conf' }
+        - { src: 'replica.conf', dest: 'replica.conf' }
+        - { src: 'prometheus.yml', dest: 'prometheus.yml' }
 
     - name: Bring up containers
       community.docker.docker_compose_v2:
@@ -129,6 +119,17 @@
       set_fact:
         mysql_master_ip: "{{ (container_infos.results | selectattr('item', 'equalto', 'mysql_master') | first).container.NetworkSettings.Networks.wordpress_wordpress_network.IPAddress }}"
         mysql_replica_ip: "{{ (container_infos.results | selectattr('item', 'equalto', 'mysql_replica') | first).container.NetworkSettings.Networks.wordpress_wordpress_network.IPAddress }}"
+
+    - name: Grant privileges for mysqld_exporter user
+      community.mysql.mysql_user:
+        name: "{{ wordpress_db_user }}"
+        password: "{{ wordpress_db_password }}"
+        priv: "*.*:PROCESS,REPLICATION CLIENT,SELECT"
+        host: "%"
+        login_user: root
+        login_password: "{{ wordpress_db_root_password }}"
+        login_host: "{{ mysql_master_ip }}"
+        state: present
 
     - name: Create replication user on master
       community.mysql.mysql_user:
