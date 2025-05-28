@@ -10,7 +10,7 @@ services:
       MYSQL_PASSWORD: wp_password
     volumes:
       - master_data:/var/lib/mysql
-      - ./master.conf:/etc/mysql/my.cnf
+      - ./master.conf:/etc/mysql/conf.d/master.conf
     networks:
       - wordpress_network
 
@@ -27,7 +27,7 @@ services:
       - mysql_master
     volumes:
       - replica_data:/var/lib/mysql
-      - ./replica.conf:/etc/mysql/my.cnf
+      - ./replica.conf:/etc/mysql/conf.d/replica.conf
     networks:
       - wordpress_network
 
@@ -62,6 +62,51 @@ services:
     networks:
       - wordpress_network
 
+  prometheus:
+    image: prom/prometheus:v3.4.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - wordpress_network
+
+  node_exporter:
+    image: prom/node-exporter:v1.9.0
+    container_name: node_exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - wordpress_network
+
+  mysqld_exporter:
+    image: prom/mysqld-exporter:v0.15.0
+    container_name: mysqld_exporter
+    environment:
+      DATA_SOURCE_NAME: "wp_user:wp_password@(mysql_master:3306)/"
+    ports:
+      - "9104:9104"
+    depends_on:
+      - mysql_master
+    networks:
+      - wordpress_network
+
+  grafana:
+    image: grafana/grafana:12.0.1
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    networks:
+      - wordpress_network
+
 networks:
   wordpress_network:
     driver: bridge
@@ -69,3 +114,4 @@ networks:
 volumes:
   master_data:
   replica_data:
+  grafana_data:
