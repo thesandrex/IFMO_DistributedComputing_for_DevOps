@@ -91,6 +91,7 @@
         - { src: 'master.conf', dest: 'master.conf' }
         - { src: 'replica.conf', dest: 'replica.conf' }
         - { src: 'prometheus.yml', dest: 'prometheus.yml' }
+        - { src: 'mysql_exporter.conf', dest: 'mysql_exporter.conf' }
 
     - name: Bring up containers
       community.docker.docker_compose_v2:
