@@ -84,7 +84,7 @@ services:
     image: prom/mysqld-exporter:v0.15.0
     container_name: mysqld_exporter
     volumes:
-      - ./mysql_exporter.conf:/home/exporter/.my.cnf
+      - ./mysql_exporter.conf:/home/mysqld_exporter/.my.cnf
     ports:
       - "9104:9104"
     depends_on:
