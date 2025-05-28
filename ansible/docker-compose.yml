@@ -85,6 +85,8 @@ services:
     container_name: mysqld_exporter
     volumes:
       - ./mysql_exporter.conf:/home/mysqld_exporter/.my.cnf
+    command:
+      - "--config.my-cnf=/home/mysqld_exporter/.my.cnf"
     ports:
       - "9104:9104"
     depends_on:
