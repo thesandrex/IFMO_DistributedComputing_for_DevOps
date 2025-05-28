@@ -1,6 +1,6 @@
 services:
   mysql_master:
-    image: mysql:latest
+    image: mysql:8.0
     container_name: mysql_master
     restart: always
     environment:
@@ -15,7 +15,7 @@ services:
       - wordpress_network
 
   mysql_replica:
-    image: mysql:latest
+    image: mysql:8.0
     container_name: mysql_replica
     restart: always
     environment:
@@ -32,7 +32,7 @@ services:
       - wordpress_network
 
   wordpress:
-    image: wordpress:latest
+    image: wordpress:6.8.1
     container_name: wordpress_app
     restart: always
     expose:
@@ -48,7 +48,7 @@ services:
       - wordpress_network
 
   nginx:
-    image: nginx:latest
+    image: nginx:1.28.0
     container_name: nginx
     restart: always
     volumes:
@@ -63,7 +63,7 @@ services:
       - wordpress_network
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.4.0
     container_name: prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
@@ -73,7 +73,7 @@ services:
       - wordpress_network
 
   node_exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.9.0
     container_name: node_exporter
     ports:
       - "9100:9100"
@@ -81,7 +81,7 @@ services:
       - wordpress_network
 
   mysqld_exporter:
-    image: prom/mysqld-exporter:latest
+    image: prom/mysqld-exporter:v0.15.0
     container_name: mysqld_exporter
     environment:
       DATA_SOURCE_NAME: "wp_user:wp_password@(mysql_master:3306)/"
@@ -93,7 +93,7 @@ services:
       - wordpress_network
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:12.0.1
     container_name: grafana
     ports:
       - "3000:3000"
