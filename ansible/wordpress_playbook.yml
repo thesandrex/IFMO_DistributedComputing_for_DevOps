@@ -9,6 +9,10 @@
     wordpress_db_root_password: "rootpassword"
     repl_user: "repl"
     repl_password: "replpass"
+    grafana_url: "http://localhost:3000"
+    grafana_user: "admin"
+    grafana_password: "admin"
+    prometheus_ds_name: "Prometheus"
   tasks:
     - name: Install dependencies
       apt:
@@ -225,78 +229,74 @@
       retries: 10
       delay: 5
 
-    - name: Add Prometheus as a datasource for node_exporter
+   - name: Add Prometheus datasource to Grafana
       uri:
-        url: "http://localhost:3000/api/datasources"
+        url: "{{ grafana_url }}/api/datasources"
         method: POST
-        user: admin
-        password: admin
+        user: "{{ grafana_user }}"
+        password: "{{ grafana_password }}"
         force_basic_auth: yes
         headers:
           Content-Type: "application/json"
-        body: |
-          {
-            "name": "Prometheus",
-            "type": "prometheus",
-            "access": "proxy",
-            "url": "http://prometheus:9090",
-            "basicAuth": false,
-            "isDefault": true
-          }
         body_format: json
-        status_code: 200,409
-    
-    - name: Import Node Exporter dashboard from Grafana.com
+        body:
+          name: "{{ prometheus_ds_name }}"
+          type: prometheus
+          access: proxy
+          url: "http://prometheus:9090"
+          isDefault: true
+        status_code: 200,409  # 409 if already exists
+      ignore_errors: true
+
+    - name: Download Node Exporter dashboard JSON
       uri:
-        url: "http://localhost:3000/api/dashboards/import"
+        url: "https://grafana.com/api/dashboards/1860/revisions/28/download"
+        return_content: yes
+      register: node_exporter_dashboard
+
+    - name: Import Node Exporter dashboard into Grafana
+      uri:
+        url: "{{ grafana_url }}/api/dashboards/import"
         method: POST
-        user: admin
-        password: admin
+        user: "{{ grafana_user }}"
+        password: "{{ grafana_password }}"
         force_basic_auth: yes
         headers:
           Content-Type: "application/json"
-        body: |
-          {
-            "dashboard": {
-              "id": 1860
-            },
-            "overwrite": true,
-            "inputs": [
-              {
-                "name": "DS_PROMETHEUS",
-                "type": "datasource",
-                "pluginId": "prometheus",
-                "value": "Prometheus"
-              }
-            ]
-          }
         body_format: json
+        body:
+          dashboard: "{{ node_exporter_dashboard.content | from_json }}"
+          overwrite: true
+          inputs:
+            - name: "DS_PROMETHEUS"
+              type: "datasource"
+              pluginId: "prometheus"
+              value: "{{ prometheus_ds_name }}"
         status_code: 200
-    
-    - name: Import MySQL Exporter dashboard from Grafana.com
+
+    - name: Download MySQL dashboard JSON
       uri:
-        url: "http://localhost:3000/api/dashboards/import"
+        url: "https://grafana.com/api/dashboards/7362/revisions/5/download"
+        return_content: yes
+      register: mysql_dashboard
+
+    - name: Import MySQL dashboard into Grafana
+      uri:
+        url: "{{ grafana_url }}/api/dashboards/import"
         method: POST
-        user: admin
-        password: admin
+        user: "{{ grafana_user }}"
+        password: "{{ grafana_password }}"
         force_basic_auth: yes
         headers:
           Content-Type: "application/json"
-        body: |
-          {
-            "dashboard": {
-              "id": 7362
-            },
-            "overwrite": true,
-            "inputs": [
-              {
-                "name": "DS_PROMETHEUS",
-                "type": "datasource",
-                "pluginId": "prometheus",
-                "value": "Prometheus"
-              }
-            ]
-          }
         body_format: json
+        body:
+          dashboard: "{{ mysql_dashboard.content | from_json }}"
+          overwrite: true
+          inputs:
+            - name: "DS_PROMETHEUS"
+              type: "datasource"
+              pluginId: "prometheus"
+              value: "{{ prometheus_ds_name }}"
         status_code: 200
-    
+
