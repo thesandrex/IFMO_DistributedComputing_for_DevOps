@@ -211,3 +211,92 @@
         msg:
           - "Replica_IO_Running: {{ slave_status.query_result[0][0].Replica_IO_Running }}"
           - "Replica_SQL_Running: {{ slave_status.query_result[0][0].Replica_SQL_Running }}"
+
+    - name: Ensure Grafana is reachable
+      uri:
+        url: "http://localhost:3000/api/health"
+        method: GET
+        user: admin
+        password: admin
+        force_basic_auth: yes
+        status_code: 200
+      register: grafana_status
+      until: grafana_status.status == 200
+      retries: 10
+      delay: 5
+
+    - name: Add Prometheus as a datasource for node_exporter
+      uri:
+        url: "http://localhost:3000/api/datasources"
+        method: POST
+        user: admin
+        password: admin
+        force_basic_auth: yes
+        headers:
+          Content-Type: "application/json"
+        body: |
+          {
+            "name": "Prometheus",
+            "type": "prometheus",
+            "access": "proxy",
+            "url": "http://prometheus:9090",
+            "basicAuth": false,
+            "isDefault": true
+          }
+        body_format: json
+        status_code: 200,409
+    
+    - name: Import Node Exporter dashboard from Grafana.com
+      uri:
+        url: "http://localhost:3000/api/dashboards/import"
+        method: POST
+        user: admin
+        password: admin
+        force_basic_auth: yes
+        headers:
+          Content-Type: "application/json"
+        body: |
+          {
+            "dashboard": {
+              "id": 1860
+            },
+            "overwrite": true,
+            "inputs": [
+              {
+                "name": "DS_PROMETHEUS",
+                "type": "datasource",
+                "pluginId": "prometheus",
+                "value": "Prometheus"
+              }
+            ]
+          }
+        body_format: json
+        status_code: 200
+    
+    - name: Import MySQL Exporter dashboard from Grafana.com
+      uri:
+        url: "http://localhost:3000/api/dashboards/import"
+        method: POST
+        user: admin
+        password: admin
+        force_basic_auth: yes
+        headers:
+          Content-Type: "application/json"
+        body: |
+          {
+            "dashboard": {
+              "id": 7362
+            },
+            "overwrite": true,
+            "inputs": [
+              {
+                "name": "DS_PROMETHEUS",
+                "type": "datasource",
+                "pluginId": "prometheus",
+                "value": "Prometheus"
+              }
+            ]
+          }
+        body_format: json
+        status_code: 200
+    
